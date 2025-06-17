@@ -60,8 +60,8 @@ const Navbar = () => {
                             <i className="bi bi-search text-white"></i>
                         </button>
                     </div>
-                    <Link to="/login" className="btn btn-login">Login</Link>
-                    <Link to="/signup" className="btn btn-signup">Sign Up</Link>
+                    <Link to="/login" className="btn btn-login">Đăng nhập</Link>
+                    <Link to="/signup" className="btn btn-signup">Đăng ký</Link>
                 </div>
             </div>
         </nav>

@@ -2,11 +2,14 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import Navbar from './compoments/Navbar';
-// import Footer from './compoments/Footer';
+import Footer from './compoments/Footer';
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ForgetPassPage from "./pages/ForgetPassPage";
+import AboutUsPage from "./pages/AboutUsPage";
+import BlogPage from "./pages/BlogPage";
+import CoursePage from "./pages/CoursePage";
 import './App.css';
 
 // Wrapper component to conditionally render Navbar and Footer
@@ -25,10 +28,13 @@ const AppLayout = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<RegisterPage />} />
           <Route path="/forget" element={<ForgetPassPage />} />
+          <Route path="/aboutus" element={<AboutUsPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/course" element={<CoursePage />} />
         </Routes>
       </div>
 
-      {/* {!hideNavbarAndFooter && <Footer />} */}
+      {!hideNavbarAndFooter && <Footer />}
     </div>
   );
 };
