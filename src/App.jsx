@@ -10,6 +10,9 @@ import ForgetPassPage from "./pages/ForgetPassPage";
 import AboutUsPage from "./pages/AboutUsPage";
 import BlogPage from "./pages/BlogPage";
 import CoursePage from "./pages/CoursePage";
+import AssessmentPage from "./pages/AssessmentPage";
+import QuizPage from "./pages/QuizPage";
+import BookingPage from "./pages/BookingPage";
 import './App.css';
 
 // Wrapper component to conditionally render Navbar and Footer
@@ -31,6 +34,9 @@ const AppLayout = () => {
           <Route path="/aboutus" element={<AboutUsPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/course" element={<CoursePage />} />
+          <Route path="/assestment" element={<AssessmentPage />} />
+          <Route path="/quiz/:id" element={<QuizPage />} />
+          <Route path="/booking" element={<BookingPage />} />
         </Routes>
       </div>
 
