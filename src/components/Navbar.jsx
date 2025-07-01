@@ -15,7 +15,7 @@ const Navbar = () => {
     setUser(storedUser);
     console.log("📦 Navbar loaded user:", storedUser);
   }, []);
-  
+
 
   const handleSearch = () => {
     const query = searchRef.current.value.trim();
@@ -76,7 +76,7 @@ const Navbar = () => {
               </Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/assestment">
+              <Link className="nav-link" to="/assessment">
                 Kiểm tra
               </Link>
             </li>

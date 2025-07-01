@@ -6,7 +6,7 @@ export const ROUTES = {
   ABOUT_US: "/aboutus",
   BLOG: "/blog",
   COURSE: "/course",
-  ASSESSMENT: "/assessment",
   QUIZ: "/quiz/:id",
   BOOKING: "/booking",
+  ASSESSMENT: "/assessment",
 };
