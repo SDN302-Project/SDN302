@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
-import Navbar from './compoments/Navbar';
-import Footer from './compoments/Footer';
+import "react-toastify/dist/ReactToastify.css";
+
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -13,30 +15,37 @@ import CoursePage from "./pages/CoursePage";
 import AssessmentPage from "./pages/AssessmentPage";
 import QuizPage from "./pages/QuizPage";
 import BookingPage from "./pages/BookingPage";
-import './App.css';
 
-// Wrapper component to conditionally render Navbar and Footer
+import { ROUTES } from "./routers/routes";
+import "./App.css";
+
 const AppLayout = () => {
   const location = useLocation();
-  const hideNavbarAndFooter = ["/login", "/signup", "/forget"].includes(location.pathname);
+  const hideNavbarAndFooter = [
+    ROUTES.LOGIN,
+    ROUTES.SIGNUP,
+    ROUTES.FORGET,
+  ].includes(location.pathname);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}
+    >
       {!hideNavbarAndFooter && <Navbar />}
       <ToastContainer position="top-right" autoClose={2000} />
 
       <div style={{ flex: 1 }}>
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<RegisterPage />} />
-          <Route path="/forget" element={<ForgetPassPage />} />
-          <Route path="/aboutus" element={<AboutUsPage />} />
-          <Route path="/blog" element={<BlogPage />} />
-          <Route path="/course" element={<CoursePage />} />
-          <Route path="/assestment" element={<AssessmentPage />} />
-          <Route path="/quiz/:id" element={<QuizPage />} />
-          <Route path="/booking" element={<BookingPage />} />
+          <Route path={ROUTES.HOME} element={<HomePage />} />
+          <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+          <Route path={ROUTES.SIGNUP} element={<RegisterPage />} />
+          <Route path={ROUTES.FORGET} element={<ForgetPassPage />} />
+          <Route path={ROUTES.ABOUT_US} element={<AboutUsPage />} />
+          <Route path={ROUTES.BLOG} element={<BlogPage />} />
+          <Route path={ROUTES.COURSE} element={<CoursePage />} />
+          <Route path={ROUTES.ASSESSMENT} element={<AssessmentPage />} />
+          <Route path={ROUTES.QUIZ} element={<QuizPage />} />
+          <Route path={ROUTES.BOOKING} element={<BookingPage />} />
         </Routes>
       </div>
 
