@@ -164,12 +164,12 @@ class PreventionAPI {
   }
 
   async getAvailableSlots(consultantId) {
-    return this.request(`/appointment-slots/available/${consultantId}`);
+    return this.request(`/appointment-slots/consultant/${consultantId}`);
   }
 
   async bookAppointmentSlot(slotId) {
-    return this.request(`/appointment-slots/book/${slotId}`, {
-      method: "POST",
+    return this.request(`/appointment-slots/${slotId}/book`, {
+      method: "PATCH",
     });
   }
 
@@ -177,9 +177,18 @@ class PreventionAPI {
     return this.request("/users?role=consultant");
   }
 
+  // Blog methods
+  async getBlogs() {
+    return this.request("/blogs");
+  }
+
+  async getBlog(id) {
+    return this.request(`/blogs/${id}`);
+  }
+
   // User methods
   async getUser(id) {
-    return this.request(`/user/${id}`);
+    return this.request(`/users/${id}`);
   }
 
   // Utility methods
@@ -205,7 +214,6 @@ class PreventionAPI {
   // Complete appointment booking workflow
   async appointmentBookingWorkflow() {
     try {
-      // 1. Get list of consultants
       const consultantsResponse = await this.getConsultants();
       const consultants = consultantsResponse.data.data;
 
@@ -304,64 +312,5 @@ class PreventionAPI {
   }
 }
 
-// Export for use in frontend
 const api = new PreventionAPI();
-
-// Usage examples:
-/*
-// Login
-try {
-  const result = await api.login('user@example.com', 'password123');
-  console.log('Login successful:', result.data.user);
-} catch (error) {
-  console.error('Login failed:', error.message);
-}
-
-// Get courses with filters
-const courses = await api.getCourses({
-  targetAudience: 'student',
-  page: 1,
-  limit: 10
-});
-
-// Enroll in course
-await api.enrollInCourse('courseId123');
-
-// Submit survey
-await api.submitSurveyResult('surveyId123', [
-  { questionIndex: 0, optionIndex: 1 },
-  { questionIndex: 1, optionIndex: 2 }
-]);
-
-// NEW: Appointment booking workflow
-// 1. Get consultants
-const consultantResult = await api.appointmentBookingWorkflow();
-if (consultantResult.success) {
-  const consultants = consultantResult.consultants;
-  
-  // 2. Get available slots for selected consultant
-  const availabilityResult = await api.getConsultantAvailability(consultants[0]._id);
-  if (availabilityResult.success) {
-    const slots = availabilityResult.slots;
-    
-    // 3. Book selected slot
-    const bookingResult = await api.completeBooking(slots[0]._id);
-    if (bookingResult.success) {
-      console.log('Appointment booked:', bookingResult.appointment);
-    }
-  }
-}
-
-// FOR CONSULTANTS: Create weekly schedule
-const weeklySlots = await api.createWeeklySlots(
-  '2025-06-20', // Start date
-  '2025-06-26', // End date  
-  [
-    { startTime: '09:00', endTime: '10:00' },
-    { startTime: '10:00', endTime: '11:00' },
-    { startTime: '14:00', endTime: '15:00' }
-  ]
-);
-*/
-
 export default api;

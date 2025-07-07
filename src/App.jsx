@@ -11,6 +11,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ForgetPassPage from "./pages/ForgetPassPage";
 import AboutUsPage from "./pages/AboutUsPage";
 import BlogPage from "./pages/BlogPage";
+import BlogDetailPage from "./pages/BlogDetailPage";
 import CoursePage from "./pages/CoursePage";
 import AssessmentPage from "./pages/AssessmentPage";
 import QuizPage from "./pages/QuizPage";
@@ -42,6 +43,7 @@ const AppLayout = () => {
           <Route path={ROUTES.FORGET} element={<ForgetPassPage />} />
           <Route path={ROUTES.ABOUT_US} element={<AboutUsPage />} />
           <Route path={ROUTES.BLOG} element={<BlogPage />} />
+          <Route path="/blog/:id" element={<BlogDetailPage />} />
           <Route path={ROUTES.COURSE} element={<CoursePage />} />
           <Route path={ROUTES.ASSESSMENT} element={<AssessmentPage />} />
           <Route path={ROUTES.QUIZ} element={<QuizPage />} />
