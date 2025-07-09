@@ -16,6 +16,7 @@ import CoursePage from "./pages/CoursePage";
 import AssessmentPage from "./pages/AssessmentPage";
 import QuizPage from "./pages/QuizPage";
 import BookingPage from "./pages/BookingPage";
+import CourseDetailPage from "./pages/CourseDetailPage";
 
 import { ROUTES } from "./routers/routes";
 import "./App.css";
@@ -48,6 +49,7 @@ const AppLayout = () => {
           <Route path={ROUTES.ASSESSMENT} element={<AssessmentPage />} />
           <Route path={ROUTES.QUIZ} element={<QuizPage />} />
           <Route path={ROUTES.BOOKING} element={<BookingPage />} />
+          <Route path="/course/:id" element={<CourseDetailPage />} />
         </Routes>
       </div>
 
