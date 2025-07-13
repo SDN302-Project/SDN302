@@ -3,6 +3,14 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import '../styles/CourseDetailPage.scss';
 import fallbackImage from '../images/Images.jpg';
 import api from '../api/frontend-sdk';
+// Thử import react-markdown, nếu chưa có thì sẽ fallback sang plain text
+let ReactMarkdown = null;
+try {
+    // eslint-disable-next-line global-require
+    ReactMarkdown = require('react-markdown');
+} catch (e) {
+    ReactMarkdown = null;
+}
 
 const CourseDetailPage = () => {
     const { id } = useParams();
@@ -16,6 +24,10 @@ const CourseDetailPage = () => {
     const [reviews, setReviews] = useState([]);
     const [loadingReviews, setLoadingReviews] = useState(true);
     const [enrolled, setEnrolled] = useState(false);
+    const [showContent, setShowContent] = useState(false);
+    const [loadingContent, setLoadingContent] = useState(false);
+    const [courseContent, setCourseContent] = useState(null);
+    const [contentError, setContentError] = useState('');
 
     useEffect(() => {
         const fetchCourse = async () => {
@@ -184,6 +196,40 @@ const CourseDetailPage = () => {
         }
     };
 
+    // Hàm lấy nội dung khóa học
+    const fetchCourseContent = async () => {
+        setLoadingContent(true);
+        setContentError('');
+        try {
+            const token = getToken();
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+            const res = await fetch(`${API_BASE_URL}/courses/${id}/content`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            const data = await res.json();
+            if (res.status === 403 || data.status === 'fail') {
+                setContentError(data.message || 'Bạn cần đăng ký khóa học để xem nội dung.');
+                setCourseContent(null);
+            } else if (data.status === 'success' && data.data && data.data.course && data.data.course.content) {
+                setCourseContent(data.data.course.content);
+            } else {
+                setContentError('Không tìm thấy nội dung khóa học.');
+                setCourseContent(null);
+            }
+        } catch (error) {
+            setContentError('Lỗi khi tải nội dung khóa học!');
+            setCourseContent(null);
+        } finally {
+            setLoadingContent(false);
+        }
+    };
+
     if (loading) {
         return <div className="text-center py-5">Đang tải chi tiết khóa học...</div>;
     }
@@ -234,11 +280,38 @@ const CourseDetailPage = () => {
                                         <button className="btn btn-outline-danger px-4 py-2 fw-semibold" onClick={handleUnenroll}>
                                             Hủy đăng ký
                                         </button>
+                                        {/* Nút xem nội dung khóa học */}
+                                        <button
+                                            className="btn btn-success px-4 py-2 fw-semibold"
+                                            style={{ marginLeft: 8 }}
+                                            onClick={() => {
+                                                setShowContent(!showContent);
+                                                if (!showContent && !courseContent && !loadingContent) fetchCourseContent();
+                                            }}
+                                        >
+                                            {showContent ? 'Ẩn nội dung' : 'Xem nội dung khóa học'}
+                                        </button>
                                     </div>
                                 ) : (
                                     <button onClick={handleEnroll} className="btn btn-primary mt-4 px-4 py-2 fw-semibold">
                                         Đăng ký khoá học
                                     </button>
+                                )}
+                                {/* Hiển thị nội dung khóa học nếu đã đăng ký và bấm nút */}
+                                {enrolled && showContent && (
+                                    <div className="mt-4 p-3 border rounded bg-light">
+                                        {loadingContent ? (
+                                            <div>Đang tải nội dung khóa học...</div>
+                                        ) : contentError ? (
+                                            <div className="text-danger">{contentError}</div>
+                                        ) : courseContent ? (
+                                            ReactMarkdown ? (
+                                                <ReactMarkdown>{courseContent}</ReactMarkdown>
+                                            ) : (
+                                                <pre style={{ whiteSpace: 'pre-wrap' }}>{courseContent}</pre>
+                                            )
+                                        ) : null}
+                                    </div>
                                 )}
                                 {/* Form đánh giá khóa học */}
                                 <div className="mt-5">
