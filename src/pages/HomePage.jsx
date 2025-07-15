@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../styles/HomePage.scss";
-import Image from "../images/Images.jpg";
-import Image1 from "../images/Image1.jpg";
-import Image2 from "../images/Image2.jpg";
-import Image3 from "../images/Image3.jpg";
-import PreventionImg from "../images/Prevention.jpg";
+import fallbackImage from "../images/Images.jpg";
+import { ROUTES } from "../routers/routes";
+
 import SupportImg from "../images/supporthug.jpg";
 import GroupSessionImg from "../images/groupsession.jpg";
 import OutdoorsImg from "../images/outdoors.jpg";
-
-import { ROUTES } from "../routers/routes";
 
 const HomePage = () => {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
@@ -20,8 +16,35 @@ const HomePage = () => {
     consultations: 0,
     success: 0,
   });
+  const [courses, setCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
 
-  // Animated counter effect
+  // Lấy danh sách khóa học từ API
+  useEffect(() => {
+    const fetchCourses = async () => {
+      setLoadingCourses(true);
+      try {
+        const res = await fetch(
+          "https://prevention-api-tdt.onrender.com/api/v1/courses"
+        );
+        const data = await res.json();
+        if (
+          data.status === "success" &&
+          data.data &&
+          Array.isArray(data.data.data)
+        ) {
+          setCourses(data.data.data.slice(0, 4)); // Lấy 4 khóa học nổi bật
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy khóa học:", error);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  // Counter animation
   useEffect(() => {
     const targets = {
       users: 5000,
@@ -29,15 +52,13 @@ const HomePage = () => {
       consultations: 2500,
       success: 95,
     };
-    const duration = 2000; // 2 seconds
-    const increment = 50; // Update every 50ms
+    const duration = 2000;
+    const increment = 50;
     const steps = duration / increment;
-
     const counters = Object.keys(targets).reduce((acc, key) => {
       acc[key] = 0;
       return acc;
     }, {});
-
     const timer = setInterval(() => {
       let allComplete = true;
       Object.keys(targets).forEach((key) => {
@@ -49,59 +70,13 @@ const HomePage = () => {
           allComplete = false;
         }
       });
-
       setStats({ ...counters });
-
-      if (allComplete) {
-        clearInterval(timer);
-      }
+      if (allComplete) clearInterval(timer);
     }, increment);
-
     return () => clearInterval(timer);
   }, []);
 
-  // Testimonials rotation
-  useEffect(() => {
-    const testimonialTimer = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
-    return () => clearInterval(testimonialTimer);
-  }, []);
-
-  const cardData = (titles, images = []) =>
-    titles.map((title, index) => ({
-      title,
-      date: "May 31, 2025",
-      image: images[index] || Image,
-      id: index + 1,
-      excerpt: getExcerpt(title),
-    }));
-
-  const getExcerpt = (title) => {
-    const excerpts = {
-      "Lạm dụng chất: Nhận thức & Phòng ngừa":
-        "Tìm hiểu về các chiến lược phòng ngừa mới nhất và cách nhận biết các dấu hiệu cảnh báo sớm.",
-      "12 cách phòng ngừa lạm dụng ma túy":
-        "Các mẹo thực tế và phương pháp dựa trên bằng chứng để ngăn chặn lạm dụng chất trong cộng đồng của bạn.",
-      "Nhận thức về lạm dụng ma túy":
-        "Hướng dẫn toàn diện về hiểu và giải quyết vấn đề lạm dụng ma túy trong xã hội ngày nay.",
-      "Tác động của việc sử dụng ma túy lâu dài":
-        "Phân tích chi tiết về tác động của việc sử dụng chất kéo dài đến sức khỏe thể chất và tinh thần.",
-      "Sự thật về ma túy":
-        "Thông tin dựa trên bằng chứng về các loại chất và tác động của chúng đối với cơ thể và tâm trí.",
-      "Sự thật về lạm dụng thuốc kê đơn":
-        "Hiểu về rủi ro và phòng ngừa việc lạm dụng thuốc kê đơn.",
-      "Con đường phục hồi - Khóa học trực tuyến":
-        "Khóa học tương tác hướng dẫn bạn qua hành trình phục hồi và chữa lành.",
-      "Bộ công cụ phòng ngừa ma túy cho thanh thiếu niên":
-        "Tài nguyên và chiến lược được thiết kế đặc biệt để ngăn chặn lạm dụng chất ở thanh thiếu niên.",
-    };
-    return (
-      excerpts[title] ||
-      "Khám phá những hiểu biết có giá trị và hướng dẫn thực tế trong tài nguyên toàn diện này."
-    );
-  };
-
+  // Testimonials auto change
   const testimonials = [
     {
       name: "Sarah Johnson",
@@ -126,31 +101,12 @@ const HomePage = () => {
     },
   ];
 
-  const renderCards = (data, basePath, showExcerpt = true) =>
-    data.map((item) => (
-      <div className="col-lg-3 col-md-6 col-sm-12 mb-4" key={item.id}>
-        <Link to={`${basePath}/${item.id}`} className="custom-card-link">
-          <div className="custom-card">
-            <div className="card-image-wrapper">
-              <img src={item.image} alt={item.title} className="card-image" />
-              <div className="card-overlay">
-                <i className="bi bi-arrow-right-circle"></i>
-              </div>
-            </div>
-            <div className="card-content">
-              <h5 className="card-title">{item.title}</h5>
-              {showExcerpt && <p className="card-excerpt">{item.excerpt}</p>}
-              <div className="card-meta">
-                <span className="card-date">
-                  <i className="bi bi-calendar3"></i> {item.date}
-                </span>
-                <span className="read-more">Read More →</span>
-              </div>
-            </div>
-          </div>
-        </Link>
-      </div>
-    ));
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="homepage">
@@ -202,13 +158,12 @@ const HomePage = () => {
                         <img
                           src={GroupSessionImg}
                           className="d-block w-100"
-                          alt="Group Support Session"
+                          alt="Group Support"
                         />
                         <div className="carousel-caption">
                           <h5>Hỗ trợ cộng đồng</h5>
                           <p>
-                            Tham gia cộng đồng hỗ trợ của chúng tôi trong hành
-                            trình phục hồi
+                            Tham gia cộng đồng hỗ trợ trong hành trình phục hồi
                           </p>
                         </div>
                       </div>
@@ -216,13 +171,12 @@ const HomePage = () => {
                         <img
                           src={OutdoorsImg}
                           className="d-block w-100"
-                          alt="Outdoor Recovery Activities"
+                          alt="Outdoor Activities"
                         />
                         <div className="carousel-caption">
                           <h5>Chữa lành toàn diện</h5>
                           <p>
-                            Khám phá các chương trình phục hồi và sức khỏe dựa
-                            trên thiên nhiên
+                            Khám phá chương trình phục hồi dựa vào thiên nhiên
                           </p>
                         </div>
                       </div>
@@ -235,7 +189,7 @@ const HomePage = () => {
                         <div className="carousel-caption">
                           <h5>Hướng dẫn chuyên môn</h5>
                           <p>
-                            Truy cập tư vấn chuyên nghiệp và chăm sóc cá nhân
+                            Tiếp cận tư vấn chuyên nghiệp và chăm sóc cá nhân
                           </p>
                         </div>
                       </div>
@@ -270,29 +224,21 @@ const HomePage = () => {
           <div className="row text-center">
             <div className="col-lg-3 col-md-6 mb-4">
               <div className="stat-item">
-                <div className="stat-icon">
-                  <i className="bi bi-people-fill"></i>
-                </div>
-                <h3 className="stat-number">
-                  {Math.floor(stats.users).toLocaleString()}+
-                </h3>
+                <i className="bi bi-people-fill stat-icon"></i>
+                <h3 className="stat-number">{Math.floor(stats.users)}+</h3>
                 <p className="stat-label">Cuộc sống được thay đổi</p>
               </div>
             </div>
             <div className="col-lg-3 col-md-6 mb-4">
               <div className="stat-item">
-                <div className="stat-icon">
-                  <i className="bi bi-book-fill"></i>
-                </div>
+                <i className="bi bi-book-fill stat-icon"></i>
                 <h3 className="stat-number">{Math.floor(stats.courses)}+</h3>
                 <p className="stat-label">Tài nguyên giáo dục</p>
               </div>
             </div>
             <div className="col-lg-3 col-md-6 mb-4">
               <div className="stat-item">
-                <div className="stat-icon">
-                  <i className="bi bi-heart-fill"></i>
-                </div>
+                <i className="bi bi-heart-fill stat-icon"></i>
                 <h3 className="stat-number">
                   {Math.floor(stats.consultations)}+
                 </h3>
@@ -301,9 +247,7 @@ const HomePage = () => {
             </div>
             <div className="col-lg-3 col-md-6 mb-4">
               <div className="stat-item">
-                <div className="stat-icon">
-                  <i className="bi bi-trophy-fill"></i>
-                </div>
+                <i className="bi bi-trophy-fill stat-icon"></i>
                 <h3 className="stat-number">{Math.floor(stats.success)}%</h3>
                 <p className="stat-label">Tỷ lệ thành công</p>
               </div>
@@ -312,8 +256,8 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* Featured Courses Section */}
       <div className="container py-5">
-        {/* Featured Courses Section */}
         <section className="section mb-5">
           <div className="section-header-wrapper text-center mb-5">
             <h2 className="section-header">Lộ trình học tập nổi bật</h2>
@@ -322,20 +266,57 @@ const HomePage = () => {
               nhất
             </p>
           </div>
+
           <div className="row gx-3">
-            {renderCards(
-              cardData(
-                [
-                  "The Truth About Drugs",
-                  "The Truth About Prescription Drug Abuse",
-                  "Recovery Pathways - Online Course",
-                  "Youth Drug Prevention Toolkit",
-                ],
-                [PreventionImg, Image2, SupportImg, Image3]
-              ),
-              "/course"
+            {loadingCourses ? (
+              <div className="text-center">Đang tải khóa học...</div>
+            ) : (
+              courses.map((course) => (
+                <div
+                  className="col-lg-3 col-md-6 col-sm-12 mb-4"
+                  key={course._id}
+                >
+                  <Link
+                    to={`/course/${course._id}`}
+                    className="custom-card-link"
+                  >
+                    <div className="custom-card">
+                      <div className="card-image-wrapper">
+                        <img
+                          src={
+                            course.imageCover
+                              ? `https://prevention-api-tdt.onrender.com/img/courses/${course.imageCover}`
+                              : fallbackImage
+                          }
+                          alt={course.name}
+                          className="card-image"
+                        />
+                        <div className="card-overlay">
+                          <i className="bi bi-arrow-right-circle"></i>
+                        </div>
+                      </div>
+                      <div className="card-content">
+                        <h5 className="card-title">{course.name}</h5>
+                        <p className="card-excerpt">
+                          {course.description?.slice(0, 100)}...
+                        </p>
+                        <div className="card-meta">
+                          <span className="card-date">
+                            <i className="bi bi-calendar3"></i>{" "}
+                            {new Date(course.createdAt).toLocaleDateString(
+                              "vi-VN"
+                            )}
+                          </span>
+                          <span className="read-more">Xem thêm →</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              ))
             )}
           </div>
+
           <div className="text-center mt-4">
             <Link to={ROUTES.COURSE} className="btn btn-primary-custom btn-lg">
               <i className="bi bi-collection me-2"></i>
@@ -343,39 +324,9 @@ const HomePage = () => {
             </Link>
           </div>
         </section>
-
-        {/* Popular Blogs Section */}
-        <section className="section mb-5">
-          <div className="section-header-wrapper text-center mb-5">
-            <h2 className="section-header">Trung tâm kiến thức</h2>
-            <p className="section-subtitle">
-              Cập nhật với những hiểu biết và nghiên cứu mới nhất
-            </p>
-          </div>
-          <div className="row gx-3">
-            {renderCards(
-              cardData(
-                [
-                  "Substance Abuse: Awareness & Prevention",
-                  "12 ways to prevent drug abuse",
-                  "Drug Abuse Awareness",
-                  "Effects of Long-Term Drug Use",
-                ],
-                [PreventionImg, Image1, Image2, Image3]
-              ),
-              "/blog"
-            )}
-          </div>
-          <div className="text-center mt-4">
-            <Link to={ROUTES.BLOG} className="btn btn-outline-primary btn-lg">
-              <i className="bi bi-journal-text me-2"></i>
-              Đọc thêm bài viết
-            </Link>
-          </div>
-        </section>
       </div>
 
-      {/* Testimonials Section */}
+      {/* Testimonials */}
       <section className="testimonials-section py-5">
         <div className="container">
           <div className="text-center mb-5">
@@ -424,7 +375,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Call to Action Section */}
+      {/* CTA */}
       <section className="cta-section py-5">
         <div className="container">
           <div className="row align-items-center">

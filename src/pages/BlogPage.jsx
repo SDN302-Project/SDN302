@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/BlogPage.scss";
-import api from "../api/frontend-sdk";
+import blogApi from "../api/blogAPI"; // export default { getAllBlogs, ... }
 
 const BlogPage = () => {
   const [posts, setPosts] = useState([]);
@@ -10,9 +10,9 @@ const BlogPage = () => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const res = await api.getBlogs();
-        console.log("📦 Blog data:", res);
-        setPosts(res.data.data); // đúng theo cấu trúc API trả về
+        const blogs = await blogApi.getAllBlogs(); // ✅ Đúng tên hàm đã export
+        console.log("📦 Blog data:", blogs);
+        setPosts(blogs);
       } catch (err) {
         console.error("Lỗi khi lấy blog:", err.message);
       } finally {
@@ -78,7 +78,7 @@ const BlogPage = () => {
                     <h3 className="featured-title">{featuredPost.title}</h3>
                     <p className="featured-meta">
                       <i className="bi bi-person me-2"></i>
-                      Tác giả: {featuredPost.author}
+                      Tác giả: {featuredPost.author?.name || "Không rõ"}
                     </p>
                     <p className="featured-excerpt">
                       {featuredPost.content.slice(0, 120)}...
@@ -121,7 +121,7 @@ const BlogPage = () => {
                     <h4 className="article-title">{post.title}</h4>
                     <p className="article-meta">
                       <i className="bi bi-person me-2"></i>
-                      Tác giả: {post.author}
+                      Tác giả: {post.author?.name || "Không rõ"}
                     </p>
                     <p className="article-excerpt">
                       {post.content.slice(0, 100)}...
@@ -138,8 +138,6 @@ const BlogPage = () => {
             ))}
           </div>
         </section>
-
-        {/* Giữ nguyên phần Newsletter, Pagination */}
       </div>
     </div>
   );
