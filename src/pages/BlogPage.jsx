@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/BlogPage.scss";
-import blogApi from "../api/blogAPI"; // export default { getAllBlogs, ... }
+import blogApi from "../api/blogApi";
 
 const BlogPage = () => {
   const [posts, setPosts] = useState([]);
@@ -10,9 +10,10 @@ const BlogPage = () => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const blogs = await blogApi.getAllBlogs(); // ✅ Đúng tên hàm đã export
-        console.log("📦 Blog data:", blogs);
-        setPosts(blogs);
+        const blogs = await blogApi.getAllBlogs(); // ✅ Đã return array blog
+        const formatted = blogApi.formatBlogList(blogs); // ✅ format lại blog
+        console.log("📦 Blog data:", formatted);
+        setPosts(formatted);
       } catch (err) {
         console.error("Lỗi khi lấy blog:", err.message);
       } finally {
@@ -80,9 +81,7 @@ const BlogPage = () => {
                       <i className="bi bi-person me-2"></i>
                       Tác giả: {featuredPost.author?.name || "Không rõ"}
                     </p>
-                    <p className="featured-excerpt">
-                      {featuredPost.content.slice(0, 120)}...
-                    </p>
+                    <p className="featured-excerpt">{featuredPost.excerpt}</p>
                     <Link
                       to={`/blog/${featuredPost._id}`}
                       className="btn btn-primary"
@@ -123,9 +122,7 @@ const BlogPage = () => {
                       <i className="bi bi-person me-2"></i>
                       Tác giả: {post.author?.name || "Không rõ"}
                     </p>
-                    <p className="article-excerpt">
-                      {post.content.slice(0, 100)}...
-                    </p>
+                    <p className="article-excerpt">{post.excerpt}</p>
                     <Link
                       to={`/blog/${post._id}`}
                       className="btn btn-outline-primary"

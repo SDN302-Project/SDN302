@@ -5,17 +5,17 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import { Link } from "react-router-dom";
 import DrugFreeLogo from "../images/DrugFreeLogo.svg";
 import "../styles/Navbar.scss";
+import authApi from "../api/authApi"; // ✅ import authApi
 
 const Navbar = () => {
   const searchRef = useRef();
-  const [user, setUser] = useState(null); //lưu user từ localStorage
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    setUser(storedUser);
-    console.log("📦 Navbar loaded user:", storedUser);
+    const currentUser = authApi.getUser(); // ✅ dùng API an toàn
+    setUser(currentUser);
+    console.log("📦 Navbar loaded user:", currentUser);
   }, []);
-
 
   const handleSearch = () => {
     const query = searchRef.current.value.trim();
@@ -25,21 +25,19 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    setUser(null); // cập nhật lại UI
-    window.location.href = "/login"; // chuyển hướng
+    authApi.logout(); // ✅ sử dụng logout từ API
+    setUser(null);
+    window.location.href = "/login";
   };
 
   return (
     <nav className="navbar fixed-top navbar-expand-lg custom-navbar">
       <div className="container-fluid">
-        {/* Logo and Title */}
         <Link className="navbar-brand d-flex align-items-center" to="/">
           <img src={DrugFreeLogo} alt="DrugFree Logo" className="navbar-logo" />
           <span className="navbar-title">DrugFree</span>
         </Link>
 
-        {/* Toggler */}
         <button
           className="navbar-toggler"
           type="button"
@@ -49,7 +47,6 @@ const Navbar = () => {
           <span className="navbar-toggler-icon"></span>
         </button>
 
-        {/* Centered links */}
         <div
           className="collapse navbar-collapse justify-content-center"
           id="navbarNav"
@@ -80,15 +77,9 @@ const Navbar = () => {
                 Kiểm tra
               </Link>
             </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/aboutus">
-                Về chúng tôi
-              </Link>
-            </li>
           </ul>
         </div>
 
-        {/* Right: search + user buttons */}
         <div className="d-flex align-items-center gap-2">
           <div className="input-group search-box">
             <input

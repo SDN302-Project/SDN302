@@ -1,35 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../styles/CoursePage.scss";
-import fallbackImage from "../images/Images.jpg"; // Ảnh mặc định nếu không có ảnh từ API
+import fallbackImage from "../images/Images.jpg";
+import courseApi from "../api/courseAPI";
 
 const CoursePage = () => {
   const [courses, setCourses] = useState([]);
   const [courseIndex, setCourseIndex] = useState(0);
   const itemsPerPage = 4;
 
-  const API_BASE_URL = "https://prevention-api-tdt.onrender.com/api/v1";
-  const IMAGE_BASE_URL = "https://prevention-api-tdt.onrender.com/img/courses/";
-
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/courses`);
-        const data = await res.json();
-        console.log("API response:", data);
-        if (
-          data.status === "success" &&
-          data.data &&
-          Array.isArray(data.data.data)
-        ) {
-          setCourses(data.data.data);
-        } else {
-          setCourses([]);
-          alert("Không lấy được danh sách khóa học!");
-        }
+        const rawCourses = await courseApi.getCourses();
+        const formatted = courseApi.formatCourseList(rawCourses);
+        setCourses(formatted);
       } catch (error) {
-        console.error("Lỗi khi tải danh sách khóa học:", error);
-        alert("Lỗi khi tải danh sách khóa học!");
+        console.error("❌ Lỗi khi tải danh sách khóa học:", error);
+        alert("Không thể tải danh sách khóa học!");
       }
     };
 
@@ -47,9 +35,9 @@ const CoursePage = () => {
   };
 
   const getImageUrl = (imageCover) => {
-    return imageCover
-      ? `https://prevention-api-tdt.onrender.com/img/courses/${imageCover}`
-      : fallbackImage;
+    if (!imageCover) return fallbackImage;
+    if (imageCover.startsWith("http")) return imageCover;
+    return `https://prevention-api-tdt.onrender.com/img/courses/${imageCover}`;
   };
 
   const renderCourses = () => {
@@ -57,6 +45,7 @@ const CoursePage = () => {
       courseIndex,
       courseIndex + itemsPerPage
     );
+
     return (
       <div className="position-relative">
         <div className="row gx-4 gy-4">
@@ -72,8 +61,15 @@ const CoursePage = () => {
                   />
                   <hr className="card-divider" />
                   <h5 className="card-title">{course.name}</h5>
-                  <p className="card-date">
-                    {new Date(course.createdAt).toLocaleDateString("vi-VN")}
+                  <p className="card-meta">
+                    {course.formattedCreatedAt} • {course.formattedDuration}
+                  </p>
+                  <p className="card-author">Tác giả: {course.authorName}</p>
+                  <p className="card-topics">
+                    Chủ đề: {course.topics?.join(", ") || "Không có"}
+                  </p>
+                  <p className="card-audience">
+                    Đối tượng: {course.audienceLabel || "Không rõ"}
                   </p>
                 </div>
               </Link>
@@ -140,9 +136,6 @@ const CoursePage = () => {
             </div>
 
             {renderCourses()}
-
-            <div className="text-center mt-4">
-            </div>
           </section>
         ) : (
           <div className="text-center py-5">

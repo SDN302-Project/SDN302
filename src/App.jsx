@@ -42,9 +42,9 @@ const AppLayout = () => {
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />
           <Route path={ROUTES.SIGNUP} element={<RegisterPage />} />
           <Route path={ROUTES.FORGET} element={<ForgetPassPage />} />
-          <Route path={ROUTES.ABOUT_US} element={<AboutUsPage />} />
+          {/* <Route path={ROUTES.ABOUT_US} element={<AboutUsPage />} /> */}
           <Route path={ROUTES.BLOG} element={<BlogPage />} />
-          <Route path="/blog/:id" element={<BlogDetailPage />} />
+          <Route path={ROUTES.BLOG_DETAIL} element={<BlogDetailPage />} />
           <Route path={ROUTES.COURSE} element={<CoursePage />} />
           <Route path={ROUTES.ASSESSMENT} element={<AssessmentPage />} />
           <Route path={ROUTES.QUIZ} element={<QuizPage />} />

@@ -5,8 +5,7 @@ import { RiHospitalFill } from "react-icons/ri";
 import getGoogleAuthUrl from "../utils/getGoogleAuthUrl";
 import { ROUTES } from "../routers/routes";
 import { useNavigate, Link } from "react-router-dom";
-
-const API_BASE_URL = "https://prevention-api-tdt.onrender.com/api/v1";
+import authApi from "../api/authApi";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -24,31 +23,15 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const { user, token } = await authApi.login({ email, password });
 
-      const data = await response.json();
-      console.log("🔐 Login response:", data);
+      authApi.saveUser(user);
+      authApi.saveToken(token);
 
-      if (data.status === "success") {
-        const user = data.data.user;
-        const token = data.token;
-
-        // Lưu vào localStorage
-        localStorage.setItem("user", JSON.stringify(user));
-        localStorage.setItem("token", token);
-
-        // Điều hướng về trang chủ
-        navigate(ROUTES.HOME);
-      } else {
-        alert(data.message || "Đăng nhập thất bại!");
-      }
+      navigate(ROUTES.HOME);
     } catch (error) {
-      console.error(error);
-      alert("Lỗi hệ thống: " + error.message);
+      console.error("Login error:", error);
+      alert(error.message || "Đăng nhập thất bại!");
     } finally {
       setLoading(false);
     }

@@ -5,6 +5,7 @@ export const ROUTES = {
   FORGET: "/forget",
   ABOUT_US: "/aboutus",
   BLOG: "/blog",
+  BLOG_DETAIL: "/blog/:id",
   COURSE: "/course",
   QUIZ: "/quiz/:id",
   BOOKING: "/booking",

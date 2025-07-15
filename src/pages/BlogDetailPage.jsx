@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import api from "../api/frontend-sdk";
+import blogApi from "../api/blogApi";
 
 import {
   Container,
@@ -9,8 +9,11 @@ import {
   Avatar,
   CircularProgress,
   Divider,
+  Stack,
+  Chip,
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 
 const BlogDetailPage = () => {
   const { id } = useParams();
@@ -20,14 +23,16 @@ const BlogDetailPage = () => {
   useEffect(() => {
     const fetchBlog = async () => {
       try {
-        const res = await api.getBlog(id);
-        setBlog(res.data.data); // lấy dữ liệu blog
+        const rawData = await blogApi.getBlogById(id);
+        const formatted = blogApi.formatBlog(rawData); // ✅ định dạng thêm
+        setBlog(formatted);
       } catch (err) {
         console.error("Lỗi lấy blog:", err.message);
       } finally {
         setLoading(false);
       }
     };
+
     fetchBlog();
   }, [id]);
 
@@ -56,20 +61,33 @@ const BlogDetailPage = () => {
           {blog.title}
         </Typography>
 
-        {/* Tác giả */}
-        <Box display="flex" alignItems="center" mb={2}>
-          <Avatar sx={{ width: 32, height: 32, mr: 1 }}>
+        {/* Thông tin tác giả và ngày */}
+        <Box display="flex" alignItems="center" gap={2} mb={2}>
+          <Avatar sx={{ width: 32, height: 32 }}>
             <PersonIcon fontSize="small" />
           </Avatar>
           <Typography variant="body2" color="text.secondary">
             {blog.author?.name || "Tác giả không rõ"}
+          </Typography>
+          <Box display="flex" alignItems="center">
+            <CalendarMonthIcon sx={{ fontSize: 16, mr: 0.5 }} />
+            <Typography variant="body2" color="text.secondary">
+              {blog.formattedDate}
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            • {blog.readingTime}
           </Typography>
         </Box>
 
         {/* Ảnh bìa */}
         <Box
           component="img"
-          src={blog.imageCover || "/default.jpg"}
+          src={
+            blog.imageCover?.startsWith("http")
+              ? blog.imageCover
+              : `https://prevention-api-tdt.onrender.com/img/blogs/${blog.imageCover}`
+          }
           alt={blog.title}
           sx={{
             width: "100%",
@@ -79,11 +97,21 @@ const BlogDetailPage = () => {
             mb: 3,
             boxShadow: 2,
           }}
+          onError={(e) => (e.target.src = "/default.jpg")}
         />
+
+        {/* Tags (nếu có) */}
+        {blog.tags && blog.tags.length > 0 && (
+          <Stack direction="row" spacing={1} mb={2}>
+            {blog.tags.map((tag, index) => (
+              <Chip key={index} label={tag} color="primary" size="small" />
+            ))}
+          </Stack>
+        )}
 
         <Divider sx={{ my: 3 }} />
 
-        {/* Nội dung */}
+        {/* Nội dung chính */}
         <Typography
           variant="body1"
           sx={{ whiteSpace: "pre-line", lineHeight: 1.8, fontSize: "1.1rem" }}

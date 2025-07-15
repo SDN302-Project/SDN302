@@ -33,7 +33,7 @@ const HomePage = () => {
           data.data &&
           Array.isArray(data.data.data)
         ) {
-          setCourses(data.data.data.slice(0, 4)); // Lấy 4 khóa học nổi bật
+          setCourses(data.data.data.slice(0, 4));
         }
       } catch (error) {
         console.error("Lỗi khi lấy khóa học:", error);
