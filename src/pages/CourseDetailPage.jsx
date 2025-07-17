@@ -1,72 +1,149 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import "../styles/CourseDetailPage.scss";
 import fallbackImage from "../images/Images.jpg";
 import courseApi from "../api/courseAPI";
 import ReactMarkdown from "react-markdown";
+import { useAuth } from "../context/AuthContext";
 
 const CourseDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [enrolled, setEnrolled] = useState(false);
-  const [enrollLoading, setEnrollLoading] = useState(false);
-  const [courseContent, setCourseContent] = useState(null);
+  const [contentLoading, setContentLoading] = useState(false);
   const [contentError, setContentError] = useState("");
+  const [courseContent, setCourseContent] = useState(null);
   const [showContent, setShowContent] = useState(false);
-  const [loadingContent, setLoadingContent] = useState(false);
+
+  const [enrollLoading, setEnrollLoading] = useState(false);
+
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
+
+  const [reviews, setReviews] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const raw = await courseApi.getCourseById(id);
-        setCourse(courseApi.formatCourse(raw));
+        const rawCourse = await courseApi.getCourseById(id);
+        setCourse(courseApi.formatCourse(rawCourse));
+
+        const { isEnrolled } = await courseApi.checkEnrolled(id);
+        setEnrolled(isEnrolled);
+
+        const fetchedReviews = await courseApi.getReviews(id);
+        setReviews(Array.isArray(fetchedReviews) ? fetchedReviews : []);
+
+        if (user) {
+          const reviewed = fetchedReviews.some(
+            (r) => r.user === user._id || r.user?._id === user._id
+          );
+          setHasReviewed(reviewed);
+        }
       } catch (err) {
-        console.error("Lỗi khi tải khoá học:", err.message);
+        console.error("❌ Lỗi khi tải khóa học:", err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    const checkStatus = async () => {
-      try {
-        const res = await courseApi.checkEnrolled(id);
-        setEnrolled(res.isEnrolled);
-      } catch {
-        setEnrolled(false);
-      }
-    };
-
     fetchData();
-    checkStatus();
-  }, [id]);
+  }, [id, user]);
+
+  const yourReview = useMemo(() => {
+    return user
+      ? reviews.find((r) => r.user === user._id || r.user?._id === user._id)
+      : null;
+  }, [user, reviews]);
+
+  const otherReviews = useMemo(() => {
+    return user
+      ? reviews.filter((r) => (r.user?._id || r.user) !== user._id)
+      : reviews;
+  }, [user, reviews]);
 
   const handleEnroll = async () => {
+    if (!user) {
+      alert("Bạn cần đăng nhập để đăng ký khóa học.");
+      navigate("/login");
+      return;
+    }
+
     try {
       setEnrollLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Unauthorized");
+
       await courseApi.enrollCourse(id);
-      alert("✅ Đăng ký thành công!");
       setEnrolled(true);
+      alert("✅ Đăng ký thành công!");
     } catch (err) {
-      if (err.message === "Unauthorized") navigate("/login");
-      else alert("❌ Lỗi khi đăng ký");
+      console.error("Enroll error:", err);
+      if (err.message === "Unauthorized") {
+        alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.");
+        navigate("/login");
+      } else {
+        alert("❌ Lỗi khi đăng ký khóa học");
+      }
     } finally {
       setEnrollLoading(false);
     }
   };
 
-  const fetchContent = async () => {
-    setLoadingContent(true);
-    setContentError("");
+  const handleToggleContent = async () => {
+    if (showContent) {
+      setShowContent(false);
+      return;
+    }
+
+    if (!courseContent && !contentLoading) {
+      setContentLoading(true);
+      try {
+        const content = await courseApi.getCourseContent(id);
+        setCourseContent(content);
+      } catch (err) {
+        setContentError(err.message || "Không thể tải nội dung");
+      } finally {
+        setContentLoading(false);
+      }
+    }
+
+    setShowContent(true);
+  };
+
+  const handleReviewSubmit = async () => {
+    if (!rating || !comment.trim()) {
+      alert("Vui lòng nhập đầy đủ đánh giá và bình luận.");
+      return;
+    }
+
     try {
-      const content = await courseApi.getCourseContent(id);
-      setCourseContent(content);
+      setReviewLoading(true);
+      const newReview = await courseApi.writeReview(id, { rating, comment });
+
+      const updatedReviews = [
+        ...reviews.filter((r) => (r.user?._id || r.user) !== user._id),
+        {
+          ...newReview,
+          user: { _id: user._id, name: user.name },
+        },
+      ];
+
+      setReviews(updatedReviews);
+      setHasReviewed(true);
+      setRating(5);
+      setComment("");
     } catch (err) {
-      setContentError(err.message || "Không thể tải nội dung");
+      alert("❌ Lỗi khi gửi đánh giá: " + err.message);
     } finally {
-      setLoadingContent(false);
+      setReviewLoading(false);
     }
   };
 
@@ -77,15 +154,17 @@ const CourseDetailPage = () => {
       : `https://prevention-api-tdt.onrender.com/img/courses/${imageCover}`;
   };
 
-  if (loading)
-    return <div className="text-center py-5">Đang tải khóa học...</div>;
+  if (loading) {
+    return <div className="text-center py-5">🔄 Đang tải khóa học...</div>;
+  }
 
-  if (!course)
+  if (!course) {
     return (
       <div className="text-center text-danger py-5">
-        Không tìm thấy khóa học!
+        ❌ Không tìm thấy khóa học!
       </div>
     );
+  }
 
   return (
     <div className="course-detail container py-5">
@@ -101,6 +180,7 @@ const CourseDetailPage = () => {
                   onError={(e) => (e.target.src = fallbackImage)}
                 />
               </div>
+
               <div className="col-md-7 p-4">
                 <h2 className="fw-bold mb-3">{course.name}</h2>
                 <p className="text-muted">{course.description}</p>
@@ -120,47 +200,118 @@ const CourseDetailPage = () => {
                   {course.formattedDuration}
                 </div>
 
-                <Link
-                  to="/course"
-                  className="btn btn-outline-secondary mt-4 me-3"
-                >
-                  ← Quay lại
-                </Link>
+                <div className="mt-4 d-flex gap-3 flex-wrap">
+                  <Link to="/course" className="btn btn-outline-secondary">
+                    ← Quay lại
+                  </Link>
 
-                {enrolled ? (
-                  <>
+                  {enrolled ? (
                     <button
-                      className="btn btn-success mt-4"
-                      onClick={() => {
-                        setShowContent(!showContent);
-                        if (!courseContent && !loadingContent && !showContent) {
-                          fetchContent();
-                        }
-                      }}
+                      className="btn btn-success"
+                      onClick={handleToggleContent}
                     >
                       {showContent ? "Ẩn nội dung" : "Xem nội dung"}
                     </button>
-                  </>
-                ) : (
-                  <button
-                    className="btn btn-primary mt-4"
-                    onClick={handleEnroll}
-                    disabled={enrollLoading}
-                  >
-                    {enrollLoading ? "Đang đăng ký..." : "Đăng ký khoá học"}
-                  </button>
-                )}
+                  ) : (
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleEnroll}
+                      disabled={enrollLoading}
+                    >
+                      {enrollLoading ? "Đang đăng ký..." : "Đăng ký khoá học"}
+                    </button>
+                  )}
+                </div>
 
-                {/* Nội dung khóa học */}
                 {enrolled && showContent && (
                   <div className="mt-4 p-3 border rounded bg-light">
-                    {loadingContent ? (
-                      <p>Đang tải nội dung khóa học...</p>
+                    {contentLoading ? (
+                      <p>🔄 Đang tải nội dung khóa học...</p>
                     ) : contentError ? (
                       <p className="text-danger">{contentError}</p>
                     ) : courseContent ? (
                       <ReactMarkdown>{courseContent}</ReactMarkdown>
                     ) : null}
+                  </div>
+                )}
+
+                {enrolled && user && !hasReviewed && (
+                  <div className="mt-4 p-4 border rounded bg-white shadow-sm">
+                    <h5 className="fw-bold mb-3">✍️ Đánh giá khoá học</h5>
+                    <div className="mb-3">
+                      <label className="form-label">Chọn số sao:</label>
+                      <select
+                        className="form-select"
+                        value={rating}
+                        onChange={(e) => setRating(parseInt(e.target.value))}
+                      >
+                        {[5, 4, 3, 2, 1].map((star) => (
+                          <option key={star} value={star}>
+                            {star} sao
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="mb-3">
+                      <label className="form-label">Nhận xét:</label>
+                      <textarea
+                        className="form-control"
+                        rows={3}
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                      />
+                    </div>
+
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleReviewSubmit}
+                      disabled={reviewLoading}
+                    >
+                      {reviewLoading ? "Đang gửi..." : "Gửi đánh giá"}
+                    </button>
+                  </div>
+                )}
+
+                {enrolled && user && hasReviewed && (
+                  <div className="mt-4 alert alert-info">
+                    ✅ Bạn đã đánh giá khoá học này.
+                  </div>
+                )}
+
+                {enrolled && reviews.length > 0 && (
+                  <div className="mt-4">
+                    <h5 className="fw-bold">💬 Các đánh giá từ học viên</h5>
+                    <ul className="list-group">
+                      {yourReview && (
+                        <li
+                          key={yourReview._id}
+                          className="list-group-item border rounded mb-2 shadow-sm bg-light"
+                        >
+                          <div className="d-flex justify-content-between align-items-center">
+                            <strong>Bạn</strong>
+                            <span className="badge bg-success">
+                              ⭐ {yourReview.rating} / 5
+                            </span>
+                          </div>
+                          <p className="mt-2 mb-0">{yourReview.review}</p>
+                        </li>
+                      )}
+                      {otherReviews.map((review) => (
+                        <li
+                          key={review._id}
+                          className="list-group-item border rounded mb-2 shadow-sm"
+                        >
+                          <div className="d-flex justify-content-between align-items-center">
+                            <strong>{review.user?.name || "Người dùng"}</strong>
+                            <span className="badge bg-warning text-dark">
+                              ⭐ {review.rating} / 5
+                            </span>
+                          </div>
+                          <p className="mt-2 mb-0">{review.review}</p>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>

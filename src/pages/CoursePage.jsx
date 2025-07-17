@@ -142,27 +142,6 @@ const CoursePage = () => {
             <p>Đang tải khóa học...</p>
           </div>
         )}
-
-        {/* Call to Action */}
-        <section className="cta-section py-5">
-          <div className="row align-items-center">
-            <div className="col-lg-8">
-              <h3 className="cta-title">
-                Sẵn sàng bắt đầu hành trình học tập?
-              </h3>
-              <p className="cta-description">
-                Tham gia ngay hôm nay để nâng cao nhận thức và phát triển bản
-                thân.
-              </p>
-            </div>
-            <div className="col-lg-4 text-lg-end">
-              <Link to="/signup" className="btn btn-cta btn-lg">
-                <i className="bi bi-person-plus me-2" />
-                Đăng ký ngay
-              </Link>
-            </div>
-          </div>
-        </section>
       </div>
     </div>
   );

@@ -10,4 +10,7 @@ export const ROUTES = {
   QUIZ: "/quiz/:id",
   BOOKING: "/booking",
   ASSESSMENT: "/assessment",
+  MY_COURSE: "/mycourses",
+  REVIEW: "/course/:id/review",
+  LEARNING: "/course/:id/learning",
 };

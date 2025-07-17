@@ -17,6 +17,7 @@ import AssessmentPage from "./pages/AssessmentPage";
 import QuizPage from "./pages/QuizPage";
 import BookingPage from "./pages/BookingPage";
 import CourseDetailPage from "./pages/CourseDetailPage";
+import MyCoursesPage from "./pages/MyCoursesPage";
 
 import { ROUTES } from "./routers/routes";
 import "./App.css";
@@ -50,6 +51,7 @@ const AppLayout = () => {
           <Route path={ROUTES.QUIZ} element={<QuizPage />} />
           <Route path={ROUTES.BOOKING} element={<BookingPage />} />
           <Route path="/course/:id" element={<CourseDetailPage />} />
+          <Route path="/my-courses" element={<MyCoursesPage />} />
         </Routes>
       </div>
 
@@ -60,9 +62,9 @@ const AppLayout = () => {
 
 function App() {
   return (
-    <BrowserRouter>
+
       <AppLayout />
-    </BrowserRouter>
+
   );
 }
 

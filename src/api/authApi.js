@@ -51,6 +51,7 @@ const login = async ({ email, password }) => {
   return { user, token };
 };
 
+
 const register = async ({ name, email, password, passwordConfirm }) => {
   return request("/auth/signup", {
     method: "POST",

@@ -1,31 +1,31 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import { Link } from "react-router-dom";
 import DrugFreeLogo from "../images/DrugFreeLogo.svg";
 import "../styles/Navbar.scss";
-import authApi from "../api/authApi"; // ✅ import authApi
+import authApi from "../api/authApi";
 
 const Navbar = () => {
-  const searchRef = useRef();
+  // const searchRef = useRef();
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const currentUser = authApi.getUser(); // ✅ dùng API an toàn
+    const currentUser = authApi.getUser();
     setUser(currentUser);
     console.log("📦 Navbar loaded user:", currentUser);
   }, []);
 
-  const handleSearch = () => {
-    const query = searchRef.current.value.trim();
-    if (query) {
-      console.log("Searching for:", query);
-    }
-  };
+  // const handleSearch = () => {
+  //   const query = searchRef.current.value.trim();
+  //   if (query) {
+  //     console.log("Searching for:", query);
+  //   }
+  // };
 
   const handleLogout = () => {
-    authApi.logout(); // ✅ sử dụng logout từ API
+    authApi.logout();
     setUser(null);
     window.location.href = "/login";
   };
@@ -81,17 +81,7 @@ const Navbar = () => {
         </div>
 
         <div className="d-flex align-items-center gap-2">
-          <div className="input-group search-box">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search..."
-              ref={searchRef}
-            />
-            <button className="btn btn-search" onClick={handleSearch}>
-              <i className="bi bi-search text-white"></i>
-            </button>
-          </div>
+
 
           {user ? (
             <>
