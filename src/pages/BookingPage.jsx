@@ -1,9 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import Image1 from '../images/Image1.jpg';
-import Image2 from '../images/Image2.jpg';
-import Image3 from '../images/Image3.jpg';
+import { getConsultants, getAvailableSlots, bookAppointmentSlot } from '../api/BookingAPI';
 import '../styles/BookingPage.scss';
+
+// Dữ liệu mẫu fallback (sử dụng khi API thất bại hoàn toàn)
+const fallbackConsultants = [
+    {
+        id: 'fallback-1',
+        name: 'Chuyên gia dự phòng',
+        specialization: 'Tư vấn chung',
+        experience: '5 năm',
+        description: 'Chuyên gia hỗ trợ tạm thời khi hệ thống gặp sự cố',
+        image: 'https://via.placeholder.com/150',
+        rating: 4
+    }
+];
 
 const BookingPage = () => {
     const [formData, setFormData] = useState({
@@ -20,40 +31,12 @@ const BookingPage = () => {
         isAnonymous: false
     });
 
+    const [consultants, setConsultants] = useState([]);
     const [selectedConsultant, setSelectedConsultant] = useState(null);
-
-    const consultants = [
-        {
-            id: 1,
-            name: "TS. Nguyễn Văn An",
-            specialization: "Chuyên gia tâm lý học",
-            experience: "15 năm kinh nghiệm",
-            description: "Chuyên tư vấn về phòng chống ma túy và hỗ trợ người nghiện",
-            image: Image1,
-            rating: 4.9,
-            availableSlots: ["09:00", "14:00", "16:00"]
-        },
-        {
-            id: 2,
-            name: "BS. Trần Thị Bình",
-            specialization: "Bác sĩ chuyên khoa tâm thần",
-            experience: "12 năm kinh nghiệm",
-            description: "Chuyên điều trị và tư vấn cho người nghiện ma túy",
-            image: Image2,
-            rating: 4.8,
-            availableSlots: ["10:00", "15:00", "17:00"]
-        },
-        {
-            id: 3,
-            name: "ThS. Lê Văn Cường",
-            specialization: "Chuyên gia công tác xã hội",
-            experience: "10 năm kinh nghiệm",
-            description: "Tư vấn phòng chống ma túy trong cộng đồng và học đường",
-            image: Image3,
-            rating: 4.7,
-            availableSlots: ["08:00", "13:00", "18:00"]
-        }
-    ];
+    const [availableSlots, setAvailableSlots] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [slotsLoading, setSlotsLoading] = useState(false);
+    const [token] = useState(localStorage.getItem('token') || '');
 
     const consultationTypes = [
         { value: 'prevention', label: 'Tư vấn phòng chống ma túy' },
@@ -70,22 +53,145 @@ const BookingPage = () => {
         { value: 'high', label: 'Khẩn cấp', color: 'danger' }
     ];
 
+    // Hàm format thời gian chuẩn hóa
+    const formatTime = (dateString) => {
+        const date = new Date(dateString);
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+    };
+
+    // Hàm thử lại API với số lần retry tối đa
+    const retryFetch = async (fn, retries = 3, delay = 1000) => {
+        for (let i = 0; i < retries; i++) {
+            try {
+                return await fn();
+            } catch (error) {
+                if (i === retries - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    };
+
+    // Lấy danh sách chuyên gia
+    useEffect(() => {
+        const fetchConsultants = async () => {
+            if (!token) {
+                toast.error('Vui lòng đăng nhập để xem danh sách chuyên gia');
+                setConsultants(fallbackConsultants);
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const response = await retryFetch(() => getConsultants(token));
+                if (response.status === 'success' && Array.isArray(response.data.consultantsList)) {
+                    const mappedConsultants = response.data.consultantsList.map(consultant => ({
+                        id: consultant._id,
+                        name: consultant.name || 'Chưa cung cấp tên',
+                        specialization: consultant.specialization || 'Tư vấn phòng chống ma túy',
+                        experience: consultant.experience || 'Không xác định',
+                        description: consultant.description || 'Chuyên gia hỗ trợ tư vấn chuyên sâu',
+                        image: consultant.photo || 'https://via.placeholder.com/150',
+                        rating: consultant.rating || 0
+                    }));
+                    setConsultants(mappedConsultants);
+                    if (mappedConsultants.length === 0) {
+                        toast.warn('Không có chuyên gia nào khả dụng');
+                        setConsultants(fallbackConsultants);
+                    }
+                } else {
+                    toast.error('Dữ liệu chuyên gia không hợp lệ: ' + (response.message || 'Lỗi không xác định'));
+                    setConsultants(fallbackConsultants);
+                }
+            } catch (error) {
+                toast.error('Lỗi kết nối khi lấy danh sách chuyên gia');
+                console.error('Error fetching consultants:', error);
+                setConsultants(fallbackConsultants);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchConsultants();
+    }, [token]);
+
+    // Lấy slot khả dụng khi chọn chuyên gia và ngày
+    useEffect(() => {
+        const fetchAvailableSlots = async () => {
+            if (selectedConsultant && token && formData.preferredDate) {
+                console.log('Fetching available slots with:', {
+                    consultantId: selectedConsultant.id,
+                    date: formData.preferredDate,
+                    token: token.substring(0, 10) + '...' // Chỉ log 10 ký tự đầu của token để bảo mật
+                });
+
+                setSlotsLoading(true);
+                try {
+                    const response = await retryFetch(() =>
+                        getAvailableSlots(selectedConsultant.id, formData.preferredDate, token)
+                    );
+                    console.log('Raw response from getAvailableSlots:', response);
+
+                    if (response.status === 'success' && Array.isArray(response.data.slots)) {
+                        const slots = response.data.slots;
+                        console.log('Available slots after filtering:', slots);
+                        setAvailableSlots(slots);
+                        if (slots.length === 0) {
+                            console.log('No slots available for date:', formData.preferredDate);
+                            toast.warn(`Không có slot khả dụng cho ngày ${formData.preferredDate}`);
+                        }
+                    } else {
+                        console.log('Invalid response from getAvailableSlots:', response);
+                        toast.error('Không thể lấy slot khả dụng');
+                        setAvailableSlots([]);
+                    }
+                } catch (error) {
+                    console.error('Error fetching available slots:', error);
+                    toast.error('Lỗi khi lấy slot khả dụng: ' + error.message);
+                    setAvailableSlots([]);
+                } finally {
+                    setSlotsLoading(false);
+                }
+            } else {
+                console.log('Not fetching slots. Missing:', {
+                    hasConsultant: !!selectedConsultant,
+                    hasToken: !!token,
+                    hasDate: !!formData.preferredDate
+                });
+                setAvailableSlots([]);
+            }
+        };
+
+        fetchAvailableSlots();
+    }, [selectedConsultant, formData.preferredDate, token]);
+
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
+        console.log('Input changed:', { name, value: type === 'checkbox' ? checked : value });
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: type === 'checkbox' ? checked : value,
+            ...(name === 'preferredDate' ? { preferredTime: '' } : {})
         }));
     };
 
     const handleConsultantSelect = (consultant) => {
+        console.log('Consultant selected:', consultant);
         setSelectedConsultant(consultant);
+        setFormData(prev => ({ ...prev, preferredDate: '', preferredTime: '' }));
+        setAvailableSlots([]); // Reset slots khi chọn consultant mới
         toast.success(`Đã chọn chuyên gia: ${consultant.name}`);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
+        if (!token) {
+            toast.error('Vui lòng đăng nhập để đặt lịch');
+            return;
+        }
+
         if (!selectedConsultant) {
             toast.error('Vui lòng chọn chuyên gia tư vấn');
             return;
@@ -96,24 +202,57 @@ const BookingPage = () => {
             return;
         }
 
-        // Mock API call
-        setTimeout(() => {
-            toast.success('Đặt lịch tư vấn thành công! Chúng tôi sẽ liên hệ sớm nhất.');
-            setFormData({
-                fullName: '',
-                email: '',
-                phone: '',
-                age: '',
-                gender: '',
-                consultationType: '',
-                preferredDate: '',
-                preferredTime: '',
-                urgency: '',
-                description: '',
-                isAnonymous: false
+        if (!formData.preferredDate || !formData.preferredTime) {
+            toast.error('Vui lòng chọn ngày và giờ mong muốn');
+            return;
+        }
+
+        console.log('Form data on submit:', formData);
+        console.log('Available slots for submit:', availableSlots);
+
+        const selectedSlot = availableSlots.find(slot => {
+            const slotTime = formatTime(slot.startTime);
+            return slotTime === formData.preferredTime;
+        });
+
+        if (!selectedSlot) {
+            console.log('No matching slot found for:', {
+                preferredDate: formData.preferredDate,
+                preferredTime: formData.preferredTime
             });
-            setSelectedConsultant(null);
-        }, 1000);
+            toast.error('Không tìm thấy slot phù hợp. Vui lòng chọn lại thời gian.');
+            return;
+        }
+
+        console.log('Selected slot for booking:', selectedSlot);
+
+        try {
+            const response = await bookAppointmentSlot(selectedSlot._id, token);
+            console.log('Booking response:', response);
+            if (response.status === 'success') {
+                toast.success('Đặt lịch tư vấn thành công! Chúng tôi sẽ liên hệ sớm nhất.');
+                setFormData({
+                    fullName: '',
+                    email: '',
+                    phone: '',
+                    age: '',
+                    gender: '',
+                    consultationType: '',
+                    preferredDate: '',
+                    preferredTime: '',
+                    urgency: '',
+                    description: '',
+                    isAnonymous: false
+                });
+                setSelectedConsultant(null);
+                setAvailableSlots([]);
+            } else {
+                toast.error('Đặt lịch thất bại: ' + (response.message || 'Lỗi không xác định'));
+            }
+        } catch (error) {
+            console.error('Error booking appointment:', error);
+            toast.error('Lỗi khi đặt lịch tư vấn: ' + error.message);
+        }
     };
 
     return (
@@ -129,37 +268,51 @@ const BookingPage = () => {
                     {/* Consultants Section */}
                     <div className="consultants-section">
                         <h2>Chọn Chuyên Gia Tư Vấn</h2>
-                        <div className="consultants-grid">
-                            {consultants.map(consultant => (
-                                <div 
-                                    key={consultant.id} 
-                                    className={`consultant-card ${selectedConsultant?.id === consultant.id ? 'selected' : ''}`}
-                                    onClick={() => handleConsultantSelect(consultant)}
-                                >
-                                    <div className="consultant-image">
-                                        <img src={consultant.image} alt={consultant.name} />
-                                        <div className="rating">
-                                            <i className="bi bi-star-fill"></i>
-                                            <span>{consultant.rating}</span>
+                        {loading ? (
+                            <div className="loading">Đang tải danh sách chuyên gia...</div>
+                        ) : consultants.length === 0 ? (
+                            <div className="no-data">Không có chuyên gia nào khả dụng</div>
+                        ) : (
+                            <div className="consultants-grid">
+                                {consultants.map(consultant => (
+                                    <div
+                                        key={consultant.id}
+                                        className={`consultant-card ${selectedConsultant?.id === consultant.id ? 'selected' : ''}`}
+                                        onClick={() => handleConsultantSelect(consultant)}
+                                    >
+                                        <div className="consultant-image">
+                                            <img src={consultant.image} alt={consultant.name} />
+                                            <div className="rating">
+                                                <i className="bi bi-star-fill"></i>
+                                                <span>{consultant.rating}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="consultant-info">
-                                        <h3>{consultant.name}</h3>
-                                        <p className="specialization">{consultant.specialization}</p>
-                                        <p className="experience">{consultant.experience}</p>
-                                        <p className="description">{consultant.description}</p>
-                                        <div className="available-slots">
-                                            <span>Giờ trống:</span>
-                                            <div className="slots">
-                                                {consultant.availableSlots.map(slot => (
-                                                    <span key={slot} className="slot">{slot}</span>
-                                                ))}
+                                        <div className="consultant-info">
+                                            <h3>{consultant.name}</h3>
+                                            <p className="specialization">{consultant.specialization}</p>
+                                            <p className="experience">{consultant.experience}</p>
+                                            <p className="description">{consultant.description}</p>
+                                            <div className="available-slots">
+                                                <span>Giờ trống:</span>
+                                                <div className="slots">
+                                                    {slotsLoading && selectedConsultant?.id === consultant.id ? (
+                                                        <span>Đang tải slot...</span>
+                                                    ) : (availableSlots.length > 0 && selectedConsultant?.id === consultant.id) ? (
+                                                        availableSlots.map(slot => (
+                                                            <span key={slot._id} className="slot">
+                                                                {formatTime(slot.startTime)}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span>Chọn để xem slot</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Booking Form */}
@@ -264,6 +417,7 @@ const BookingPage = () => {
                                         value={formData.preferredDate}
                                         onChange={handleInputChange}
                                         min={new Date().toISOString().split('T')[0]}
+                                        required
                                     />
                                 </div>
                                 <div className="form-group">
@@ -273,18 +427,19 @@ const BookingPage = () => {
                                         name="preferredTime"
                                         value={formData.preferredTime}
                                         onChange={handleInputChange}
+                                        disabled={slotsLoading || !formData.preferredDate || availableSlots.length === 0}
+                                        required
                                     >
                                         <option value="">Chọn giờ</option>
-                                        <option value="08:00">08:00</option>
-                                        <option value="09:00">09:00</option>
-                                        <option value="10:00">10:00</option>
-                                        <option value="13:00">13:00</option>
-                                        <option value="14:00">14:00</option>
-                                        <option value="15:00">15:00</option>
-                                        <option value="16:00">16:00</option>
-                                        <option value="17:00">17:00</option>
-                                        <option value="18:00">18:00</option>
+                                        {availableSlots.map(slot => (
+                                            <option key={slot._id} value={formatTime(slot.startTime)}>
+                                                {formatTime(slot.startTime)}
+                                            </option>
+                                        ))}
                                     </select>
+                                    {formData.preferredDate && !slotsLoading && availableSlots.length === 0 && (
+                                        <p className="no-slots-message">Không có slot khả dụng cho ngày này</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -333,7 +488,11 @@ const BookingPage = () => {
                             </div>
 
                             <div className="form-actions">
-                                <button type="submit" className="btn btn-primary btn-lg">
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary btn-lg"
+                                    disabled={slotsLoading || !formData.preferredTime}
+                                >
                                     <i className="bi bi-calendar-check"></i>
                                     Đặt Lịch Tư Vấn
                                 </button>
@@ -363,4 +522,4 @@ const BookingPage = () => {
     );
 };
 
-export default BookingPage; 
+export default BookingPage;
