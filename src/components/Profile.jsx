@@ -67,7 +67,8 @@ const Profile = ({ show, onHide, user, onUserUpdate }) => {
     try {
       await authApi.changePassword({
         currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword
+        newPassword: passwordForm.newPassword,
+        passwordConfirm: passwordForm.newPassword
       });
       setMessage({ type: "success", text: "Đổi mật khẩu thành công!" });
       setPasswordForm({

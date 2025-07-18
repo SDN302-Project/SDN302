@@ -94,13 +94,13 @@ const updateProfile = async (profileData) => {
   return updatedUser;
 };
 
-const changePassword = async ({ currentPassword, newPassword }) => {
+const changePassword = async ({ currentPassword, newPassword, passwordConfirm }) => {
   return request("/users/updateMyPassword", {
     method: "PATCH",
     body: JSON.stringify({
       passwordCurrent: currentPassword,
       password: newPassword,
-      passwordConfirm: newPassword
+      passwordConfirm: passwordConfirm
     }),
   });
 };
