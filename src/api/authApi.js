@@ -79,6 +79,38 @@ const getProfile = async () => {
   });
 };
 
+const updateProfile = async (profileData) => {
+  const response = await request("/users/updateMe", {
+    method: "PATCH",
+    body: JSON.stringify(profileData),
+  });
+  
+  // Cập nhật user trong localStorage
+  const updatedUser = response.data?.user;
+  if (updatedUser) {
+    saveUser(updatedUser);
+  }
+  
+  return updatedUser;
+};
+
+const changePassword = async ({ currentPassword, newPassword }) => {
+  return request("/users/updateMyPassword", {
+    method: "PATCH",
+    body: JSON.stringify({
+      passwordCurrent: currentPassword,
+      password: newPassword,
+      passwordConfirm: newPassword
+    }),
+  });
+};
+
+const deleteAccount = async () => {
+  return request("/users/deleteMe", {
+    method: "DELETE",
+  });
+};
+
 const logout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
@@ -108,6 +140,9 @@ export default {
   forgotPassword,
   resetPassword,
   getProfile,
+  updateProfile,
+  changePassword,
+  deleteAccount,
   logout,
   saveToken,
   saveUser,

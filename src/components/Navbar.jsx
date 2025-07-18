@@ -6,10 +6,12 @@ import { Link } from "react-router-dom";
 import DrugFreeLogo from "../images/DrugFreeLogo.svg";
 import "../styles/Navbar.scss";
 import authApi from "../api/authApi";
+import Profile from "./Profile";
 
 const Navbar = () => {
   // const searchRef = useRef();
   const [user, setUser] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
     const currentUser = authApi.getUser();
@@ -28,6 +30,10 @@ const Navbar = () => {
     authApi.logout();
     setUser(null);
     window.location.href = "/login";
+  };
+
+  const handleUserUpdate = (updatedUser) => {
+    setUser(updatedUser);
   };
 
   return (
@@ -81,13 +87,18 @@ const Navbar = () => {
         </div>
 
         <div className="d-flex align-items-center gap-2">
-
-
           {user ? (
             <>
               <span className="me-2 fw-semibold">
                 Xin chào, {user.name || user.email}
               </span>
+              <button 
+                className="btn btn-outline-primary me-2" 
+                onClick={() => setShowProfile(true)}
+              >
+                <i className="bi bi-person-circle me-1"></i>
+                Hồ sơ
+              </button>
               <button className="btn btn-outline-danger" onClick={handleLogout}>
                 Đăng xuất
               </button>
@@ -104,6 +115,13 @@ const Navbar = () => {
           )}
         </div>
       </div>
+      
+      <Profile 
+        show={showProfile}
+        onHide={() => setShowProfile(false)}
+        user={user}
+        onUserUpdate={handleUserUpdate}
+      />
     </nav>
   );
 };
